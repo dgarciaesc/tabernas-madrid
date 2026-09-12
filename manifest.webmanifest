@@ -1,0 +1,13 @@
+{
+  "name": "Tabernas con Historia",
+  "short_name": "Tabernas",
+  "description": "Ruta de bares históricos de Madrid: 5 enigmas, de Lavapiés a la Plaza de Santa Ana, con una bebida en cada parada.",
+  "lang": "es",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#efe0c0",
+  "theme_color": "#2b1d0e",
+  "icons": []
+}

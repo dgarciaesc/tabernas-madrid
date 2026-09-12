@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>Gracias · Tabernas con Historia</title>
+  <link rel="stylesheet" href="css/styles.css?v=1" />
+</head>
+<body>
+  <div id="app">
+    <main id="screen" style="padding: 20px 18px 32px">
+      <div class="title-screen">
+        <div class="title-emblem" id="emblem">⏳</div>
+        <h1>Tabernas con Historia</h1>
+        <div class="ornament">❦ ❦ ❦</div>
+        <div class="card" id="resultCard">
+          <div class="card-label">🔑 Vuestra licencia</div>
+          <p id="msg">Confirmando el pago con Stripe…</p>
+          <p class="big-score" id="codeBox" style="display:none"></p>
+        </div>
+        <a class="btn-primary" id="btnPlay" href="./index.html" style="display:none; text-decoration:none; text-align:center">
+          Ir al juego
+        </a>
+        <p class="title-meta">
+          Guardad este código: lo pedirá la app la primera vez que la
+          abráis. Se activa en el primer móvil donde se introduzca.
+        </p>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/license.js?v=1"></script>
+  <script>
+    (async () => {
+      const $emblem = document.getElementById("emblem");
+      const $msg = document.getElementById("msg");
+      const $codeBox = document.getElementById("codeBox");
+      const $btnPlay = document.getElementById("btnPlay");
+
+      const params = new URLSearchParams(location.search);
+      const sessionId = params.get("session_id");
+      if (!sessionId) {
+        $emblem.textContent = "⚠";
+        $msg.textContent = "Falta la referencia del pago. Si acabas de pagar, revisa el enlace que te llevó aquí.";
+        return;
+      }
+
+      // el webhook de Stripe puede tardar unos segundos: reintentamos
+      async function poll(tries) {
+        for (let i = 0; i < tries; i++) {
+          try {
+            const res = await fetch(
+              `${License.WORKER_URL}/api/code-for-session?session_id=${encodeURIComponent(sessionId)}`
+            );
+            const data = await res.json();
+            if (res.ok && data.code) return data.code;
+          } catch (e) {}
+          await new Promise((r) => setTimeout(r, 2000));
+        }
+        return null;
+      }
+
+      const code = await poll(10);
+      if (code) {
+        $emblem.textContent = "⚜";
+        $msg.textContent = "¡Pago confirmado! Este es vuestro código de licencia:";
+        $codeBox.textContent = code;
+        $codeBox.style.display = "block";
+        $btnPlay.style.display = "block";
+      } else {
+        $emblem.textContent = "⏳";
+        $msg.textContent =
+          "El pago se ha confirmado pero el código tarda un poco más de lo normal. Recarga esta página en unos segundos.";
+      }
+    })();
+  </script>
+</body>
+</html>

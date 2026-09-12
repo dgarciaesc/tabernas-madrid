@@ -1,0 +1,1090 @@
+/* ============================================================
+   El Testamento del Siglo de Oro — estética pergamino/áureo
+   ============================================================ */
+
+:root {
+  --ink: #2b1d0e;
+  --ink-soft: #4a3620;
+  --parchment: #f0e3c8;
+  --parchment-deep: #e4d2ae;
+  --gold: #b8860b;
+  --gold-bright: #d4a017;
+  --crimson: #7a1f1f;
+  --ok: #2e6b34;
+  --shadow: rgba(43, 29, 14, 0.35);
+  --radius: 14px;
+  --serif: "Iowan Old Style", "Palatino", "Palatino Linotype", Georgia, serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--serif);
+  color: var(--ink);
+  /* Plaza Mayor al atardecer (dominio público, Alejandro Silvio Alonso)
+     como fondo de toda la app, atenuada con un velo dorado/pergamino
+     para que el texto y las tarjetas (opacas) sigan tan legibles como
+     antes — la foto solo asoma en los huecos entre tarjetas. */
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(212, 160, 23, 0.10), transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(122, 31, 31, 0.08), transparent 50%),
+    linear-gradient(160deg, rgba(239, 224, 192, 0.82) 0%, rgba(232, 214, 176, 0.8) 45%, rgba(220, 198, 151, 0.85) 100%),
+    url("../img/app_bg.jpg");
+  background-size: auto, auto, auto, cover;
+  background-position: center, center, center, center 30%;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  max-width: 560px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+}
+
+.hidden { display: none !important; }
+
+/* ---------- Barra superior ---------- */
+#topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: linear-gradient(180deg, rgba(43,29,14,0.96), rgba(43,29,14,0.88));
+  color: var(--parchment);
+  border-bottom: 2px solid var(--gold);
+}
+
+.seal-track {
+  display: flex;
+  gap: 8px;
+}
+
+.seal {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--gold);
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(240, 227, 200, 0.5);
+  background: transparent;
+  transition: all 0.4s ease;
+}
+
+.seal.done {
+  background: radial-gradient(circle at 35% 30%, #a83232, var(--crimson));
+  color: var(--parchment);
+  border-color: var(--crimson);
+  box-shadow: 0 0 8px rgba(168, 50, 50, 0.6);
+}
+
+.seal.current {
+  border-color: var(--gold-bright);
+  color: var(--gold-bright);
+  box-shadow: 0 0 10px rgba(212, 160, 23, 0.7);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+
+.score-box {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-variant-numeric: tabular-nums;
+}
+
+#scoreValue {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--gold-bright);
+}
+
+.score-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.8;
+}
+
+/* ---------- Pantallas ---------- */
+#screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 18px 32px;
+  animation: fadein 0.5s ease;
+}
+
+@keyframes fadein {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+.stage-header { text-align: center; margin-bottom: 6px; }
+
+.stage-kicker {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--crimson);
+  font-weight: 700;
+}
+
+h1, h2 {
+  font-weight: 700;
+  line-height: 1.15;
+  margin: 8px 0 4px;
+}
+
+h1 { font-size: 30px; }
+h2 { font-size: 23px; }
+
+.location-line {
+  font-style: italic;
+  color: var(--ink-soft);
+  font-size: 15px;
+  margin: 2px 0 14px;
+}
+
+.stage-timer {
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  margin: 0 0 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.stage-timer.over { color: var(--crimson); }
+
+/* ---------- Grabados ilustrativos ---------- */
+.art-card {
+  margin: 10px 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 4px 14px var(--shadow);
+  line-height: 0;
+}
+
+.art-card svg, .art-card img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+figure.art-card {
+  margin: 10px 0;
+  border: 6px solid #f7eed9;
+  outline: 1.5px solid rgba(184, 134, 11, 0.6);
+  background: #f7eed9;
+}
+
+figure.art-card img {
+  max-height: 360px;
+  object-fit: contain;
+}
+
+.art-card-imgwrap {
+  position: relative; /* ancla del punto "estáis aquí" */
+  line-height: 0;
+}
+
+/* El plano de Texeira no debe recortarse ni dejar bandas vacías: el
+   punto del jugador se calcula como % exacto sobre la imagen entera. */
+#prologueMap img {
+  max-height: none;
+}
+
+figure.art-card figcaption {
+  line-height: 1.4;
+  font-size: 12.5px;
+  font-style: italic;
+  color: var(--ink-soft);
+  text-align: center;
+  padding: 7px 10px 3px;
+}
+
+/* Ficha biográfica del personaje del enigma, dentro del mismo
+   recuadro que su retrato/obra (ver artCard()). */
+.art-card-bio {
+  padding: 12px 14px 4px;
+  border-top: 1px solid rgba(184, 134, 11, 0.25);
+}
+
+.art-card-bio-label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+
+.art-card-bio p {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+/* ---------- Fotos de recuerdo ---------- */
+.photo-section { margin-top: 6px; }
+
+.photo-frame {
+  position: relative;
+  margin: 10px 0 4px;
+  border: 6px solid #f7eed9;
+  outline: 1.5px solid rgba(184, 134, 11, 0.6);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 4px 14px var(--shadow);
+  line-height: 0;
+}
+
+.photo-frame img {
+  width: 100%;
+  display: block;
+  filter: sepia(0.25) contrast(1.02);
+}
+
+.photo-seal {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #a83232, var(--crimson));
+  border: 2px solid #5e1616;
+  color: var(--parchment);
+  font-size: 20px;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  transform: rotate(-12deg);
+}
+
+.photo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.gallery-item { margin: 0; }
+
+.gallery-item .photo-seal {
+  width: 28px;
+  height: 28px;
+  font-size: 13px;
+  bottom: 34px; /* por encima de la leyenda */
+  right: 6px;
+}
+
+.gallery-item figcaption {
+  line-height: 1.3;
+  font-size: 12.5px;
+  text-align: center;
+  padding: 6px 4px 2px;
+  background: #f7eed9;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+.time-cell {
+  font-size: 13px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+/* Ornamento separador */
+.ornament {
+  text-align: center;
+  color: var(--gold);
+  font-size: 18px;
+  letter-spacing: 0.5em;
+  margin: 10px 0;
+  user-select: none;
+}
+
+/* ---------- Tarjetas ---------- */
+.card {
+  background: linear-gradient(180deg, var(--parchment), var(--parchment-deep));
+  border: 1.5px solid rgba(184, 134, 11, 0.55);
+  border-radius: var(--radius);
+  padding: 18px 18px 16px;
+  margin: 10px 0;
+  box-shadow: 0 4px 14px var(--shadow);
+  position: relative;
+}
+
+.card-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-right: 46px; /* hueco para el botón de audio */
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--crimson);
+  margin-bottom: 8px;
+}
+
+.card p {
+  margin: 0;
+  font-size: 16.5px;
+  line-height: 1.62;
+}
+
+.card p + p {
+  margin-top: 12px;
+}
+
+/* ---------- El Historiador: identidad de quien habla ---------- */
+.speaker {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 11px;
+  padding-right: 46px; /* hueco para el botón de audio */
+}
+
+.speaker-avatar {
+  width: 52px;
+  height: 52px;
+  flex: none;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: 50% 32%; /* encuadra el rostro */
+  border: 2px solid var(--gold);
+  box-shadow: 0 2px 7px var(--shadow);
+}
+
+.speaker-id {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.28;
+  min-width: 0;
+}
+
+.speaker-name {
+  font-weight: 700;
+  font-size: 15.5px;
+  color: var(--crimson);
+}
+
+.speaker-tag {
+  font-size: 12.5px;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+/* Sobre la tarjeta oscura del enigma */
+.card.enigma .speaker-avatar { border-color: var(--gold-bright); }
+.card.enigma .speaker-name { color: var(--gold-bright); }
+.card.enigma .speaker-tag { color: #c3b189; }
+
+/* Avatar pequeño en pistas */
+.mini-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: 50% 32%;
+  border: 1.5px solid var(--gold);
+  vertical-align: -8px;
+  margin-right: 7px;
+}
+
+/* En móviles estrechos, que el nombre no parta en dos líneas */
+@media (max-width: 420px) {
+  .speaker-avatar { width: 46px; height: 46px; }
+  .speaker-name { font-size: 14px; }
+  .speaker-tag { font-size: 11.5px; }
+  .speaker { gap: 9px; padding-right: 42px; }
+}
+
+/* Ficha de presentación en el prólogo */
+figure.narrator-portrait img { max-height: 320px; }
+
+.narrator-bio {
+  font-style: italic;
+}
+
+.card.enigma {
+  background: linear-gradient(180deg, #2f2013, #241809);
+  color: #ecdcb8;
+  border-color: var(--gold);
+}
+
+.card.enigma .card-label { color: var(--gold-bright); }
+.card.enigma p { font-style: italic; }
+
+/* ---------- Botones ---------- */
+button {
+  font-family: var(--serif);
+  cursor: pointer;
+  border: none;
+  border-radius: var(--radius);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.2s;
+}
+
+button:active { transform: scale(0.97); }
+
+.btn-primary {
+  width: 100%;
+  padding: 15px 20px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--parchment);
+  background: linear-gradient(180deg, #8f2727, var(--crimson));
+  border: 1.5px solid #5e1616;
+  box-shadow: 0 4px 12px rgba(122, 31, 31, 0.45);
+  margin-top: 14px;
+}
+
+.btn-secondary {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 15.5px;
+  font-weight: 600;
+  color: var(--ink);
+  background: rgba(184, 134, 11, 0.16);
+  border: 1.5px solid rgba(184, 134, 11, 0.55);
+  margin-top: 10px;
+}
+
+.btn-primary:disabled {
+  opacity: 0.45;
+  filter: grayscale(0.4);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.listen-required-hint {
+  margin: 10px 0 0;
+  font-size: 13.5px;
+  text-align: center;
+  color: var(--gold-bright, #d4a017);
+  font-weight: 600;
+}
+
+.btn-ghost {
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  font-size: 14px;
+  text-decoration: underline;
+  padding: 10px;
+  margin-top: 6px;
+  align-self: center;
+}
+
+.btn-row { display: flex; gap: 10px; }
+.btn-row > button { flex: 1; }
+
+.btn-audio {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  font-size: 17px;
+  background: rgba(184, 134, 11, 0.2);
+  border: 1.5px solid rgba(184, 134, 11, 0.6);
+  display: grid;
+  place-items: center;
+}
+
+.card.enigma .btn-audio {
+  background: rgba(212, 160, 23, 0.15);
+  color: var(--gold-bright);
+}
+
+/* ---------- Formulario de respuesta ---------- */
+.answer-form { margin-top: 14px; }
+
+.answer-format {
+  font-size: 13px;
+  color: var(--ink-soft);
+  font-style: italic;
+  margin: 0 0 6px 4px;
+}
+
+input[type="text"] {
+  width: 100%;
+  padding: 14px 16px;
+  font-family: var(--serif);
+  font-size: 18px;
+  color: var(--ink);
+  background: #f7eed9;
+  border: 2px solid rgba(184, 134, 11, 0.6);
+  border-radius: var(--radius);
+  outline: none;
+}
+
+input[type="text"]:focus {
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 0 3px rgba(212, 160, 23, 0.25);
+}
+
+input.shake {
+  animation: shake 0.4s;
+  border-color: var(--crimson);
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-7px); }
+  75% { transform: translateX(7px); }
+}
+
+/* ---------- Pistas ---------- */
+.hint-box {
+  margin-top: 12px;
+  padding: 13px 15px;
+  border-radius: var(--radius);
+  font-size: 15.5px;
+  line-height: 1.55;
+  animation: fadein 0.4s ease;
+}
+
+.hint-box.subtle {
+  background: rgba(212, 160, 23, 0.14);
+  border: 1.5px dashed var(--gold);
+}
+
+.hint-box.direct {
+  background: rgba(122, 31, 31, 0.08);
+  border: 1.5px dashed var(--crimson);
+}
+
+.hint-box.reveal {
+  background: rgba(46, 107, 52, 0.1);
+  border: 1.5px solid var(--ok);
+}
+
+.hint-box .hint-title {
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+
+.hint-box ol {
+  margin: 4px 0 0;
+  padding-left: 20px;
+}
+
+.hint-box li { margin-bottom: 5px; }
+
+.attempts-dots {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.attempt-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink-soft);
+}
+
+.attempt-dot.used { background: var(--crimson); border-color: var(--crimson); }
+
+/* ---------- Pantalla home (marca + selector de idioma) ---------- */
+.home-screen {
+  /* escapa del padding de #screen para ir a sangre completa */
+  margin: calc(-1 * env(safe-area-inset-top) - 20px) -18px -32px;
+  flex: 1;
+  display: flex;
+}
+
+.home-photo {
+  position: relative;
+  flex: 1;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+.home-photo > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(20, 12, 4, 0.55) 0%, rgba(20, 12, 4, 0.15) 32%, rgba(20, 12, 4, 0.35) 62%, rgba(12, 7, 2, 0.88) 100%);
+}
+
+.home-content {
+  position: relative;
+  z-index: 1;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  text-align: center;
+  padding: 40px 22px calc(36px + env(safe-area-inset-bottom));
+  color: #f7ecd6;
+}
+
+.home-emblem {
+  font-size: 46px;
+  margin-bottom: 6px;
+  filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.6));
+}
+
+.home-title {
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  margin: 0 0 6px;
+  color: #f3dfa8;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.7), 0 1px 0 rgba(0, 0, 0, 0.4);
+}
+
+.home-tagline {
+  font-style: italic;
+  font-size: 15.5px;
+  opacity: 0.92;
+  margin: 0 0 30px;
+  min-height: 1.4em;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+}
+
+.home-langs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 340px;
+}
+
+.home-lang-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 15px 20px;
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 600;
+  color: #2b1d0e;
+  background: rgba(247, 236, 214, 0.94);
+  border: 1.5px solid rgba(184, 134, 11, 0.7);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.home-lang-btn:active { transform: scale(0.97); }
+
+.home-lang-btn .flag {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.home-credit {
+  position: absolute;
+  bottom: calc(8px + env(safe-area-inset-bottom));
+  right: 10px;
+  z-index: 1;
+  margin: 0;
+  font-size: 10.5px;
+  color: rgba(247, 236, 214, 0.55);
+}
+
+/* ---------- Selector de idioma (título / candado) ---------- */
+.lang-switcher {
+  position: absolute;
+  top: calc(10px + env(safe-area-inset-top));
+  right: 14px;
+  display: flex;
+  gap: 6px;
+  z-index: 2;
+}
+
+.lang-chip {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 16px;
+  background: rgba(184, 134, 11, 0.14);
+  border: 1.5px solid rgba(184, 134, 11, 0.4);
+  opacity: 0.65;
+}
+
+.lang-chip.active {
+  opacity: 1;
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 0 2px rgba(212, 160, 23, 0.25);
+}
+
+/* ---------- Pantalla título ---------- */
+.title-screen {
+  position: relative; /* ancla del selector de idioma en la esquina */
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  padding: 24px 8px;
+}
+
+.title-emblem { font-size: 74px; margin-bottom: 6px; }
+
+.title-screen h1 {
+  font-size: 36px;
+  background: linear-gradient(180deg, #8a5c00, var(--crimson));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.title-sub {
+  font-style: italic;
+  color: var(--ink-soft);
+  font-size: 16px;
+  margin-top: 6px;
+}
+
+.title-meta {
+  margin-top: 18px;
+  font-size: 14px;
+  color: var(--ink-soft);
+  line-height: 1.7;
+}
+
+/* ---------- Navegación / mapa ---------- */
+.map-link {
+  display: block;
+  text-align: center;
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: var(--radius);
+  background: rgba(46, 107, 52, 0.12);
+  border: 1.5px solid rgba(46, 107, 52, 0.5);
+  color: var(--ok);
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 15.5px;
+}
+
+.gps-status {
+  text-align: center;
+  font-size: 14px;
+  color: var(--ink-soft);
+  margin-top: 10px;
+  font-style: italic;
+  min-height: 20px;
+}
+
+.gps-status.near { color: var(--ok); font-weight: 700; }
+
+.pin-note {
+  font-size: 12.5px;
+  font-style: italic;
+  opacity: 0.85;
+}
+
+/* ---------- Punto "estáis aquí" sobre el plano de Texeira ---------- */
+.user-map-pin {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 5;
+  animation: fadein 0.4s ease;
+}
+
+.pin-dot,
+.pin-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 50%;
+}
+
+.pin-dot {
+  width: 13px;
+  height: 13px;
+  margin: -6.5px 0 0 -6.5px;
+  background: radial-gradient(circle at 35% 30%, #d34848, var(--crimson));
+  border: 2px solid #fff6e6;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.pin-ring {
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border: 2px solid var(--crimson);
+  animation: pin-ping 1.7s ease-out infinite;
+}
+
+/* Cuando el jugador cae fuera de este fragmento del plano y se ha
+   recortado su posición, el punto se distingue en dorado */
+.user-map-pin.approximate .pin-dot {
+  background: radial-gradient(circle at 35% 30%, #e0ab2e, var(--gold));
+}
+.user-map-pin.approximate .pin-ring {
+  border-color: var(--gold);
+}
+
+@keyframes pin-ping {
+  0% { transform: scale(0.6); opacity: 0.9; }
+  100% { transform: scale(2.3); opacity: 0; }
+}
+
+/* ---------- Victoria ---------- */
+.victory-screen { text-align: center; }
+
+.victory-emblem { font-size: 64px; margin: 8px 0; }
+
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0;
+  font-size: 15px;
+}
+
+.stats-table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid rgba(184, 134, 11, 0.35);
+  text-align: left;
+}
+
+.stats-table td:last-child {
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.big-score {
+  font-size: 44px;
+  font-weight: 700;
+  color: var(--crimson);
+  margin: 6px 0;
+}
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--parchment);
+  padding: 12px 22px;
+  border-radius: 30px;
+  border: 1.5px solid var(--gold);
+  font-family: var(--serif);
+  font-size: 15.5px;
+  z-index: 100;
+  max-width: 86vw;
+  text-align: center;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+  animation: fadein 0.3s ease;
+}
+
+/* ---------- Superposición de cámara (comparador histórico) ---------- */
+body.no-scroll { overflow: hidden; }
+
+.ar-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+}
+
+.ar-stage {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.ar-video,
+.ar-old {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+
+.ar-old {
+  clip-path: inset(0 50% 0 0);
+  filter: sepia(0.25) contrast(1.05);
+}
+
+.ar-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.ar-handle::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -1px;
+  width: 2px;
+  background: var(--parchment);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
+}
+
+.ar-handle-grip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--parchment);
+  border: 2px solid var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: var(--ink);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+.ar-status {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  margin: 0;
+  padding: 10px 18px;
+  border-radius: 30px;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--parchment);
+  font-family: var(--serif);
+  font-size: 14.5px;
+  text-align: center;
+  max-width: 80%;
+}
+
+.ar-status-error { color: #f0b3b3; }
+
+.ar-close {
+  position: absolute;
+  top: calc(14px + env(safe-area-inset-top));
+  right: 14px;
+  z-index: 4;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: var(--parchment);
+  font-size: 16px;
+  border: 1px solid rgba(240, 227, 200, 0.35);
+}
+
+.ar-caption {
+  background: var(--ink);
+  padding: 14px 18px calc(16px + env(safe-area-inset-bottom));
+}
+
+.ar-caption p {
+  margin: 0;
+  font-family: var(--serif);
+  color: var(--parchment);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.ar-caption .ar-credit {
+  margin-top: 6px;
+  font-size: 11.5px;
+  font-style: italic;
+  color: rgba(240, 227, 200, 0.65);
+}
+
+/* ---------- Certificado de finalización (comparte .ar-overlay) ---------- */
+.cert-stage {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 70px 16px 16px;
+}
+
+.cert-canvas {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 6px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.cert-actions {
+  display: flex;
+  gap: 10px;
+  padding: 14px 18px calc(16px + env(safe-area-inset-bottom));
+  background: var(--ink);
+}
+
+.cert-actions button {
+  flex: 1;
+  margin: 0;
+}
+
+/* Escritorio: enmarcar como "cuaderno" */
+@media (min-width: 600px) {
+  #app {
+    box-shadow: 0 0 60px rgba(43, 29, 14, 0.25);
+    border-left: 1px solid rgba(184, 134, 11, 0.4);
+    border-right: 1px solid rgba(184, 134, 11, 0.4);
+    background: rgba(240, 227, 200, 0.35);
+  }
+}
