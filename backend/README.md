@@ -21,22 +21,16 @@ Save and deploy".
 
 ---
 
-## 0. Publicar el frontend (GitHub Pages)
+## 0. Frontend (GitHub Pages) — ✅ ya hecho
 
-Este proyecto todavía no está subido a ningún repositorio. Antes de nada:
+Repositorio: [github.com/dgarciaesc/tabernas-madrid](https://github.com/dgarciaesc/tabernas-madrid),
+con GitHub Pages activado. URL real del juego (no la uses directamente
+con jugadores; el dominio público es `hiddenmadrid.com/tabernas`, ver
+paso 5 más abajo):
 
-```bash
-cd /Users/David/tabernas_madrid
-git init
-git add -A
-git commit -m "Primera versión: Tabernas con Historia"
 ```
-
-Crea un repositorio nuevo en GitHub (por ejemplo `tabernas-madrid`) y
-súbelo (`git remote add origin ...` + `git push`), luego activa GitHub
-Pages en Settings → Pages de ese repositorio. Apunta un dominio propio si
-quieres (fichero `CNAME`), igual que se hizo con `hiddenmadrid.com` para
-el primer juego.
+https://dgarciaesc.github.io/tabernas-madrid/
+```
 
 ## 1. Cloudflare: base de datos D1
 
@@ -69,17 +63,15 @@ el primer juego.
    | `STRIPE_SECRET_KEY` | tu clave secreta de Stripe (paso 3) | ✅ |
    | `STRIPE_WEBHOOK_SECRET` | la firma del webhook (paso 3) | ✅ |
    | `STRIPE_PRICE_ID` | el ID del precio creado en Stripe (paso 3) | ✅ |
-   | `SITE_URL` | la URL de tu GitHub Pages o dominio propio (con la ruta, sin barra final) | — |
-   | `ALLOWED_ORIGIN` | el mismo dominio, **con `https://` y sin ninguna ruta** (⚠️ el error más habitual: olvidarse del `https://`, ver más abajo) | — |
+   | `SITE_URL` | `https://hiddenmadrid.com/tabernas` (con la ruta, sin barra final — el juego vive bajo /tabernas, ver el Worker-puente del paso 5; se usa para construir las URLs de vuelta de Stripe) | — |
+   | `ALLOWED_ORIGIN` | `https://hiddenmadrid.com` (⚠️ **sin ninguna ruta** — el navegador nunca incluye la ruta en la cabecera `Origin`, así que esto no cambia aunque el juego esté en /tabernas; si pones una ruta aquí, CORS bloquea todas las peticiones) | — |
 
    Guarda y **vuelve a desplegar** el Worker tras añadirlas (Deploy).
 
-   ⚠️ **Sobre `ALLOWED_ORIGIN`**: tiene que ser el origen completo,
-   p.ej. `https://tabernas-madrid.tu-usuario.github.io` o
-   `https://tudominio.com` — **con el esquema `https://` delante**. Si
-   pones solo el dominio a secas (`tudominio.com`), el navegador
-   rechazará las peticiones aunque el Worker responda 200 (visto en el
-   primer juego: por ahí perdimos un rato la primera vez).
+   ⚠️ **Sobre `ALLOWED_ORIGIN`**: tiene que llevar el esquema `https://`
+   delante. Si pones solo el dominio a secas (`hiddenmadrid.com`), el
+   navegador rechazará las peticiones aunque el Worker responda 200
+   (visto en el primer juego: por ahí se perdió un rato la primera vez).
 
 ## 3. Stripe: cobro
 
@@ -106,9 +98,27 @@ git commit -m "Conectar backend de licencias"
 git push
 ```
 
-## 5. Probar de punta a punta
+## 5. Publicar en hiddenmadrid.com/tabernas (Worker-puente)
 
-1. Abre tu URL de GitHub Pages en una pestaña nueva (o borra `localStorage`)
+El juego vive en GitHub Pages, pero los jugadores deben usar
+`hiddenmadrid.com/tabernas` (no la URL de github.io). Para eso hace
+falta un segundo Worker, aparte del de licencias, que actúe de puente:
+
+1. **Workers & Pages** → **Create** → **Workers** → **Create Worker**
+2. Nombre: `tabernas-proxy` → Deploy (con el código de ejemplo, luego lo sustituyes)
+3. **Edit code** → borra todo, pega el de [proxy_worker.js](proxy_worker.js) de este repo → **Save and deploy**
+4. En el propio Worker → **Settings → Domains & Routes → Add → Route**:
+   - Route: `hiddenmadrid.com/tabernas*` (con el asterisco al final)
+   - Zona: `hiddenmadrid.com`
+   - Guarda
+
+Esto es exactamente el mismo mecanismo que ya usa `hiddenmadrid.com/goldenage`
+para el primer juego — cada juego tiene su propio Worker-puente, así
+que no hay ningún conflicto entre ambos.
+
+## 6. Probar de punta a punta
+
+1. Abre `https://hiddenmadrid.com/tabernas/` en una pestaña nueva (o borra `localStorage`)
 2. Pulsa "Comprar licencia" → paga con la tarjeta de prueba `4242 4242 4242 4242`
 3. Deberías caer en `gracias.html` con un código `TABERNAS-XXXXXX`
 4. Vuelve al juego, introdúcelo → debería desbloquear las 5 paradas
