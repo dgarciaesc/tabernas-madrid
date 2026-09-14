@@ -44,10 +44,10 @@ https://dgarciaesc.github.io/tabernas-madrid/
 ## 2. Cloudflare: el Worker
 
 1. **Workers & Pages** → **Create** → **Workers** → **Create Worker**
-2. Nombre: `tabernas-licencias` (o el que prefieras) → Deploy (con el código de ejemplo, luego lo sustituimos)
+2. Nombre: el que prefieras (en este proyecto se llama `taberns`) → Deploy (con el código de ejemplo, luego lo sustituimos)
 3. Una vez creado, pulsa **Edit code** (el editor "Quick Edit")
-4. Borra todo el contenido y pega el de [worker.js](worker.js) de este repo → **Save and deploy**
-5. **Copia la URL** que te asigna Cloudflare, arriba del editor — algo como `https://tabernas-licencias.tu-usuario.workers.dev`. La necesitarás en el paso 4 de abajo.
+4. Borra todo el contenido y pega el de [worker.js](worker.js) de este repo → **Save and deploy** (no basta con "Save": si no le das a "deploy" se queda con la plantilla de ejemplo)
+5. **Copia la URL** que te asigna Cloudflare, arriba del editor — en este proyecto es `https://taberns.supermoncho.workers.dev`. La necesitarás en el paso 4 de abajo (ya está puesta en `js/license.js`).
 
 ### Conectar el Worker con la base de datos
 
