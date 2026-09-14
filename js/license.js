@@ -5,10 +5,7 @@
    ============================================================ */
 
 const License = (() => {
-  /* ⚠️ AJUSTA ESTO tras desplegar el Worker en Cloudflare.
-     La URL exacta aparece en el panel del Worker, algo como:
-     https://tabernas-licencias.tu-usuario.workers.dev */
-  const WORKER_URL = "https://CAMBIA-ESTO.workers.dev";
+  const WORKER_URL = "https://taberns.supermoncho.workers.dev";
 
   const DEVICE_KEY = "tabernas_device_id";
   const STAGES_CACHE_KEY = "tabernas_stages_v1";
