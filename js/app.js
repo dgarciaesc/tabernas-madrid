@@ -974,7 +974,7 @@
         </div>
 
         <button class="btn-secondary" id="btnBuy">
-          ${t("license_buy", { price: GAME_DATA.price || "19€" })}
+          ${t("license_buy", { price: GAME_DATA.price || "9€" })}
         </button>
         <p class="title-meta">${t("license_note")}</p>
       </div>
@@ -1011,7 +1011,7 @@
       } catch (err) {
         toast(err.message);
         $btnBuy.disabled = false;
-        $btnBuy.textContent = t("license_buy", { price: GAME_DATA.price || "19€" });
+        $btnBuy.textContent = t("license_buy", { price: GAME_DATA.price || "9€" });
       }
     };
 

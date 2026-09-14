@@ -19,7 +19,7 @@ const GAME_DATA_I18N = {
     fr: "Route des bars historiques de Madrid",
   },
   city: "Madrid",
-  price: { es: "15€ por equipo", en: "€15 per team", fr: "15 € par équipe" },
+  price: { es: "9€ por equipo", en: "€9 per team", fr: "9 € par équipe" },
 
   /* Guía ficticio de la ruta: un veterano tabernero que ha heredado el
      oficio (y las historias) de generaciones de su familia. */

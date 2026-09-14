@@ -76,7 +76,7 @@ https://dgarciaesc.github.io/tabernas-madrid/
 ## 3. Stripe: cobro
 
 1. Misma cuenta de **[stripe.com](https://dashboard.stripe.com)** que el otro juego, o una nueva
-2. **Product catalog** → **Add product**: nombre "Tabernas con Historia — Licencia de equipo", precio único (p.ej. 15€), tipo "One time" → guarda
+2. **Product catalog** → **Add product**: nombre "Tabernas con Historia — Licencia de equipo", precio único de **9€**, tipo "One time" → guarda
 3. Copia el **Price ID** (`price_...`) → `STRIPE_PRICE_ID`
 4. **Developers → API keys** → copia la **Secret key** (`sk_test_...` mientras pruebas) → `STRIPE_SECRET_KEY`
 5. **Developers → Webhooks** → **Add endpoint**:
