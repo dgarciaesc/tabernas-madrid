@@ -433,7 +433,7 @@ function generateCode() {
   let code = "";
   const bytes = crypto.getRandomValues(new Uint8Array(6));
   for (const b of bytes) code += alphabet[b % alphabet.length];
-  return `MADRID-${code}`;
+  return `TABERNAS-${code}`;
 }
 
 /* Verificación de la firma del webhook de Stripe (esquema HMAC-SHA256
