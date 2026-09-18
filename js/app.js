@@ -770,6 +770,7 @@
               <div class="photo-seal">✦</div></div>`;
           wrap.querySelector("#btnPhoto").textContent = t("photo_repeat");
           toast(t("photo_saved"));
+          License.trackEvent("photo_taken", { stageId: stage.id });
           if (onSaved) onSaved();
         } else {
           toast(t("photo_no_space"));
@@ -996,6 +997,7 @@
         const stages = await License.redeem($input.value);
         GAME_DATA.stages = stages;
         toast(t("license_activated"));
+        License.trackEvent("license_redeemed", { lang: I18N.getLang() });
         go("title");
       } catch (err) {
         $error.innerHTML = `<div class="hint-box direct">${err.message}</div>`;
@@ -1143,6 +1145,7 @@
     if (!S.stageEnteredAt) {
       S.stageEnteredAt = Date.now();
       Engine.save();
+      License.trackEvent("stage_started", { stageId: st.id, stageIndex: st.num });
     }
     const locationArt = artCard(
       { photo: st.locationPhoto, photoCaption: st.locationPhotoCaption },
@@ -1252,7 +1255,9 @@
     }
 
     $btnHint.onclick = () => {
-      Engine.useHint();
+      if (Engine.useHint()) {
+        License.trackEvent("hint_used", { stageId: st.id });
+      }
       renderHints();
     };
 
@@ -1275,6 +1280,8 @@
       if (S.attempts >= 3) {
         const pts = Engine.completeStage(true);
         S.lastPoints = pts;
+        const revealedEntry = S.stageLog[S.stageLog.length - 1];
+        License.trackEvent("stage_completed", revealedEntry);
         toast(t("stage_solved_help", { pts }));
         go("photo");
         return;
@@ -1285,11 +1292,13 @@
         const pts = Engine.completeStage(false);
         S.lastPoints = pts;
         const last = S.stageLog[S.stageLog.length - 1];
+        License.trackEvent("stage_completed", last);
         toast(t(last.bonus ? "stage_correct_bonus" : "stage_correct", { pts }));
         go("photo");
       } else {
         S.attempts++;
         Engine.save();
+        License.trackEvent("wrong_attempt", { stageId: st.id, attempt: S.attempts });
         $input.classList.remove("shake");
         void $input.offsetWidth; // reiniciar animación
         $input.classList.add("shake");
@@ -1412,17 +1421,21 @@
     v.querySelector("#googleForm").onsubmit = (e) => {
       e.preventDefault();
       if (S.googleAttempts >= 3) {
+        const attemptsBefore = S.googleAttempts;
         const pts = Engine.completeGoogle(true);
         S.lastPoints = pts;
         S.pendingWalkText = tr.walkText;
+        License.trackEvent("google_bonus_completed", { revealed: true, attempts: attemptsBefore, points: pts });
         Engine.advanceStage();
         go("transition");
         return;
       }
       if (Engine.checkGoogleAnswer($input.value, tr)) {
+        const attemptsBefore = S.googleAttempts;
         const pts = Engine.completeGoogle(false);
         S.lastPoints = pts;
         S.pendingWalkText = tr.walkText;
+        License.trackEvent("google_bonus_completed", { revealed: false, attempts: attemptsBefore, points: pts });
         toast(t("google_correct", { pts }));
         Engine.advanceStage();
         go("transition");
@@ -1557,6 +1570,11 @@
 
   /* ---------- Pantalla: victoria ---------- */
   function viewVictory() {
+    if (!S.victoryTracked) {
+      S.victoryTracked = true;
+      Engine.save();
+      License.trackEvent("game_finished", { score: S.score, seconds: Engine.elapsedSeconds() });
+    }
     const vic = GAME_DATA.victory;
     const rows = S.stageLog
       .map(
@@ -1735,6 +1753,13 @@
           });
           Engine.setTeamName(name);
           Engine.markLeaderboardSubmitted();
+          License.trackEvent("leaderboard_submitted", {
+            teamName: name,
+            seconds: Engine.elapsedSeconds() || 0,
+            score: S.score,
+            rank,
+            total,
+          });
           renderSubmitted(rank, total);
           loadTable();
         } catch (e) {

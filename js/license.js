@@ -155,6 +155,26 @@ const License = (() => {
     return Array.isArray(data.rows) ? data.rows : [];
   }
 
+  /* Analítica: registra un evento puntual del equipo (POST /api/events/
+     track), en plan "disparar y olvidar" — nunca bloquea la partida ni
+     muestra un error si falla (sin red, licencia aún no activa, etc.).
+     El backend valida código+dispositivo igual que en submitLeaderboard. */
+  function trackEvent(eventType, eventData) {
+    const code = currentCode();
+    if (!code) return;
+    fetch(`${WORKER_URL}/api/events/track`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        code,
+        deviceId: deviceId(),
+        eventType,
+        eventData: eventData || {},
+        lang: I18N.getLang() || "es",
+      }),
+    }).catch(() => {});
+  }
+
   return {
     WORKER_URL,
     deviceId,
@@ -167,5 +187,6 @@ const License = (() => {
     startCheckout,
     submitLeaderboard,
     fetchLeaderboardTop,
+    trackEvent,
   };
 })();

@@ -44,6 +44,7 @@ const Engine = (() => {
       stageLog: [], // {id, attempts, revealed, hintUsed, points}
       leaderboardSubmitted: false, // ya se envió este resultado al ranking
       teamName: "", // nombre de equipo, se pide una vez y se reutiliza
+      victoryTracked: false, // evita duplicar el evento "game_finished" si se revisita la pantalla
     };
   }
 

@@ -12,6 +12,7 @@
                                     juego en el idioma pedido (es/en/fr)
      POST /api/leaderboard/submit → guarda el tiempo de un equipo en el ranking
      GET  /api/leaderboard/top    → top N del ranking (por tiempo, ascendente)
+     POST /api/events/track       → analítica: registra un evento puntual del equipo
 
    VARIABLES DE ENTORNO NECESARIAS (Settings → Variables del Worker):
      STRIPE_SECRET_KEY     (Encrypt) — clave secreta de Stripe (sk_live_...)
@@ -672,6 +673,36 @@ async function handleLeaderboardTop(request, env) {
   return json({ rows }, 200, env);
 }
 
+/* POST /api/events/track — analítica: guarda un evento puntual de un
+   equipo (entra en una prueba, falla, pide pista, resuelve, hace foto,
+   termina, envía su tiempo al ranking...). Mismo chequeo de licencia
+   activa que el ranking, para que solo equipos reales generen datos.
+   No hay panel propio: se consulta directamente por SQL en D1, p.ej.
+     SELECT * FROM events WHERE code = 'TABERNAS-XXXXXX' ORDER BY created_at; */
+async function handleEventTrack(request, env) {
+  const { code, deviceId, eventType, eventData } = await request.json();
+  if (!code || !deviceId || !eventType) return json({ error: "missing data" }, 400, env);
+
+  const normalized = code.trim().toUpperCase();
+  const license = await env.DB.prepare(
+    "SELECT 1 FROM licenses WHERE code = ? AND device_id = ? AND status = 'active'"
+  )
+    .bind(normalized, deviceId)
+    .first();
+  if (!license) return json({ error: "invalid license" }, 403, env);
+
+  const safeType = String(eventType).slice(0, 60);
+  const safeData = eventData ? JSON.stringify(eventData).slice(0, 2000) : null;
+
+  await env.DB.prepare(
+    "INSERT INTO events (code, device_id, event_type, event_data, created_at) VALUES (?, ?, ?, ?, ?)"
+  )
+    .bind(normalized, deviceId, safeType, safeData, Date.now())
+    .run();
+
+  return json({ ok: true }, 200, env);
+}
+
 /* ============================================================
    Entrada
    ============================================================ */
@@ -704,6 +735,9 @@ export default {
 
       if (url.pathname === "/api/leaderboard/top" && request.method === "GET")
         return await handleLeaderboardTop(request, scopedEnv);
+
+      if (url.pathname === "/api/events/track" && request.method === "POST")
+        return await handleEventTrack(request, scopedEnv);
 
       return json({ error: "not found" }, 404, scopedEnv);
     } catch (err) {

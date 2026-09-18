@@ -34,3 +34,21 @@ CREATE TABLE IF NOT EXISTS leaderboard (
 );
 
 CREATE INDEX IF NOT EXISTS idx_leaderboard_seconds ON leaderboard(seconds);
+
+-- Analítica: registro cronológico de eventos por equipo (una fila por
+-- acción: licencia activada, entra en una prueba, falla, pide pista,
+-- resuelve, hace foto, termina la prueba de Google, victoria, envía su
+-- tiempo al ranking...). event_data guarda detalles en JSON libre.
+-- Pensado para consultarse directamente por SQL (sin panel propio):
+--   SELECT * FROM events WHERE code = 'TABERNAS-XXXXXX' ORDER BY created_at;
+CREATE TABLE IF NOT EXISTS events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  code TEXT NOT NULL,             -- código de licencia = equipo
+  device_id TEXT NOT NULL,
+  event_type TEXT NOT NULL,       -- p.ej. stage_started, hint_used, stage_completed...
+  event_data TEXT,                -- JSON con detalles del evento
+  created_at INTEGER NOT NULL     -- epoch ms
+);
+
+CREATE INDEX IF NOT EXISTS idx_events_code ON events(code);
+CREATE INDEX IF NOT EXISTS idx_events_created ON events(created_at);
