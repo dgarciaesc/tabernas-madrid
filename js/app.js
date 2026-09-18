@@ -806,6 +806,7 @@
       google: viewGoogle,
       transition: viewTransition,
       victory: viewVictory,
+      leaderboard: viewLeaderboard,
     };
     (views[S.screen] || viewHome)();
   }
@@ -1185,6 +1186,9 @@
           <input type="text" id="answerInput" placeholder="${t("answer_placeholder")}"
                  autocomplete="off" autocapitalize="characters" enterkeyhint="go" />
           <div class="attempts-dots" id="attemptDots"></div>
+          <button type="button" class="btn-ghost btn-hint" id="btnRequestHint">
+            ${t("hint_request_button", { cost: SCORING.hintCost })}
+          </button>
           <div id="hintArea"></div>
           <button type="submit" class="btn-primary" id="btnSubmit">${t("seal_answer")}</button>
         </form>
@@ -1203,6 +1207,7 @@
     const $hintArea = v.querySelector("#hintArea");
     const $dots = v.querySelector("#attemptDots");
     const $btnSubmit = v.querySelector("#btnSubmit");
+    const $btnHint = v.querySelector("#btnRequestHint");
 
     function renderDots() {
       $dots.innerHTML = "";
@@ -1214,8 +1219,12 @@
     }
 
     function renderHints() {
+      // el botón de pedir pista solo tiene sentido antes de que la pista
+      // sutil aparezca ya gratis (tras el primer fallo)
+      $btnHint.hidden = S.attempts >= 1 || S.hintUsed;
+
       $hintArea.innerHTML = "";
-      if (S.attempts >= 1) {
+      if (S.attempts >= 1 || S.hintUsed) {
         $hintArea.appendChild(
           el(`<div class="hint-box subtle">
                 <div class="hint-title">${miniAvatar()} ${t("speaker_hint_subtle")}</div>
@@ -1241,6 +1250,11 @@
         $btnSubmit.textContent = t("continue_route");
       }
     }
+
+    $btnHint.onclick = () => {
+      Engine.useHint();
+      renderHints();
+    };
 
     renderDots();
     renderHints();
@@ -1549,7 +1563,7 @@
         (l) =>
           `<tr><td>${l.title}</td>
            <td class="time-cell">${Engine.formatSeconds(l.seconds)}${l.bonus ? " ⚡" : ""}</td>
-           <td>${l.revealed ? "🔓" : l.attempts === 0 ? "⚜" : "✔"} ${l.points}</td></tr>`
+           <td>${l.revealed ? "🔓" : l.hintUsed ? "💡" : l.attempts === 0 ? "⚜" : "✔"} ${l.points}</td></tr>`
       )
       .join("");
     const photos = Engine.getPhotos();
@@ -1588,6 +1602,7 @@
         }
         <div id="finalPhotoSlot"></div>
         <button class="btn-primary" id="btnCertificate">${t("victory_certificate")}</button>
+        <button class="btn-secondary" id="btnLeaderboard">${t("victory_leaderboard")}</button>
         <button class="btn-secondary" id="btnShare">${t("victory_share")}</button>
         <button class="btn-ghost" id="btnAgain">${t("victory_again")}</button>
       </div>
@@ -1598,6 +1613,7 @@
     const slot = v.querySelector("#finalPhotoSlot");
     slot.appendChild(photoSection(lastStage, render)); // re-render: entra en el álbum
     v.querySelector("#btnCertificate").onclick = () => openCertificate();
+    v.querySelector("#btnLeaderboard").onclick = () => go("leaderboard");
     v.querySelector("#btnShare").onclick = async () => {
       const text = t("share_text", {
         title: GAME_DATA.title,
@@ -1621,6 +1637,121 @@
       Engine.reset();
       location.reload();
     };
+    $screen.appendChild(v);
+  }
+
+  /* ---------- Pantalla: ranking de equipos ----------
+     Solo accesible tras terminar la aventura (se llega desde el botón
+     de la pantalla de victoria). Si el equipo aún no ha enviado su
+     tiempo, primero pide el nombre; una vez enviado (o si ya se había
+     enviado en una sesión anterior), muestra la tabla de los mejores
+     tiempos de todos los equipos. */
+  function viewLeaderboard() {
+    const alreadySubmitted = S.leaderboardSubmitted;
+    const v = el(`
+      <div class="leaderboard-screen">
+        <button class="btn-ghost btn-back" id="btnLbBack">${t("leaderboard_back")}</button>
+        <h1>${t("leaderboard_title")}</h1>
+        <p class="location-line">${t("leaderboard_subtitle")}</p>
+        <div id="lbSubmitArea"></div>
+        <div id="lbTableArea" class="card"><p>…</p></div>
+      </div>
+    `);
+    v.querySelector("#btnLbBack").onclick = () => go("victory");
+
+    const $submitArea = v.querySelector("#lbSubmitArea");
+    const $tableArea = v.querySelector("#lbTableArea");
+
+    function renderTable(rows) {
+      if (!rows.length) {
+        $tableArea.innerHTML = `<p>${t("leaderboard_empty")}</p>`;
+        return;
+      }
+      const medal = (i) => (i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`);
+      const body = rows
+        .map(
+          (r, i) => `<tr>
+            <td>${medal(i)}</td>
+            <td>${r.teamName}</td>
+            <td class="time-cell">${Engine.formatSeconds(r.seconds)}</td>
+            <td>${r.score}</td>
+          </tr>`
+        )
+        .join("");
+      $tableArea.innerHTML = `
+        <table class="stats-table leaderboard-table">
+          <thead><tr>
+            <th></th>
+            <th>${t("leaderboard_col_team")}</th>
+            <th>${t("leaderboard_col_time")}</th>
+            <th>${t("leaderboard_col_score")}</th>
+          </tr></thead>
+          <tbody>${body}</tbody>
+        </table>`;
+    }
+
+    async function loadTable() {
+      try {
+        const rows = await License.fetchLeaderboardTop(10);
+        renderTable(rows);
+      } catch (e) {
+        $tableArea.innerHTML = `<p>${e.message}</p>`;
+      }
+    }
+
+    function renderSubmitted(rank, total) {
+      $submitArea.innerHTML = `
+        <div class="card">
+          <p>✅ ${t("leaderboard_submitted")}</p>
+          ${rank ? `<p class="leaderboard-rank">${t("leaderboard_your_rank", { rank, total })}</p>` : ""}
+        </div>`;
+    }
+
+    function renderForm() {
+      $submitArea.innerHTML = `
+        <div class="card">
+          <label class="field-label" for="lbTeamInput">${t("leaderboard_team_label")}</label>
+          <input type="text" id="lbTeamInput" maxlength="40"
+                 placeholder="${t("leaderboard_team_placeholder")}"
+                 value="${Engine.teamName()}" autocomplete="off" />
+          <button class="btn-primary" id="btnLbSubmit">${t("leaderboard_submit")}</button>
+        </div>`;
+      const $input = v.querySelector("#lbTeamInput");
+      const $btn = v.querySelector("#btnLbSubmit");
+      $btn.onclick = async () => {
+        const name = $input.value.trim();
+        if (!name) {
+          $input.focus();
+          return;
+        }
+        $btn.disabled = true;
+        $btn.textContent = t("leaderboard_submitting");
+        try {
+          const { rank, total } = await License.submitLeaderboard({
+            teamName: name,
+            seconds: Engine.elapsedSeconds() || 0,
+            score: S.score,
+            lang: I18N.getLang(),
+          });
+          Engine.setTeamName(name);
+          Engine.markLeaderboardSubmitted();
+          renderSubmitted(rank, total);
+          loadTable();
+        } catch (e) {
+          toast(e.message);
+          $btn.disabled = false;
+          $btn.textContent = t("leaderboard_submit");
+        }
+      };
+    }
+
+    if (alreadySubmitted) {
+      renderSubmitted(null, null);
+    } else {
+      renderForm();
+    }
+    loadTable();
+
     $screen.appendChild(v);
   }
 

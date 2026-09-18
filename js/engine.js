@@ -35,12 +35,15 @@ const Engine = (() => {
       screen: "title", // title | prologue | stage | google | transition | victory
       stageIndex: 0,
       attempts: 0, // fallos en el enigma actual
+      hintUsed: false, // pista sutil pedida voluntariamente en la prueba actual
       googleAttempts: 0,
       stageEnteredAt: null, // cronómetro de la prueba en curso
       score: 0,
       startedAt: null,
       finishedAt: null,
-      stageLog: [], // {id, attempts, revealed, points}
+      stageLog: [], // {id, attempts, revealed, hintUsed, points}
+      leaderboardSubmitted: false, // ya se envió este resultado al ranking
+      teamName: "", // nombre de equipo, se pide una vez y se reutiliza
     };
   }
 
@@ -84,21 +87,33 @@ const Engine = (() => {
   }
 
   /* --- Resolución de una etapa --- */
-  function stagePoints(attempts, revealed) {
+  function stagePoints(attempts, revealed, hintUsed) {
     let pts = SCORING.stageBase - attempts * SCORING.failPenalty;
     if (revealed) pts -= SCORING.revealPenalty;
+    if (hintUsed) pts -= SCORING.hintCost;
     return Math.max(pts, 100); // resolver siempre suma algo
+  }
+
+  /* Pide la pista sutil de forma voluntaria, antes de fallar el enigma
+     (regla nueva: la pista ya no es gratis). Idempotente — pedirla dos
+     veces no cobra dos veces. Devuelve true si se acaba de activar. */
+  function useHint() {
+    if (state.hintUsed) return false;
+    state.hintUsed = true;
+    save();
+    return true;
   }
 
   function completeStage(revealed) {
     const stage = currentStage();
-    let pts = stagePoints(state.attempts, revealed);
+    let pts = stagePoints(state.attempts, revealed, state.hintUsed);
     const seconds = state.stageEnteredAt
       ? Math.round((Date.now() - state.stageEnteredAt) / 1000)
       : null;
-    // Bonus de celeridad: resuelta a la primera en menos de 2 minutos
+    // Bonus de celeridad: resuelta a la primera en menos de 2 minutos,
+    // sin pistas de pago
     let bonus = 0;
-    if (!revealed && state.attempts === 0 && seconds !== null && seconds <= 120) {
+    if (!revealed && state.attempts === 0 && !state.hintUsed && seconds !== null && seconds <= 120) {
       bonus = SCORING.speedBonus;
       pts += bonus;
     }
@@ -108,11 +123,13 @@ const Engine = (() => {
       title: stage.title,
       attempts: state.attempts,
       revealed: !!revealed,
+      hintUsed: !!state.hintUsed,
       points: pts,
       seconds,
       bonus,
     });
     state.attempts = 0;
+    state.hintUsed = false;
     state.stageEnteredAt = null;
     save();
     return pts;
@@ -215,6 +232,27 @@ const Engine = (() => {
     return h > 0 ? `${h} h ${m} min` : `${m} min`;
   }
 
+  /* Segundos totales en bruto (para el ranking, no para mostrar) */
+  function elapsedSeconds() {
+    if (!state.startedAt) return null;
+    const end = state.finishedAt || Date.now();
+    return Math.round((end - state.startedAt) / 1000);
+  }
+
+  function teamName() {
+    return state.teamName || "";
+  }
+
+  function setTeamName(name) {
+    state.teamName = (name || "").trim().slice(0, 40);
+    save();
+  }
+
+  function markLeaderboardSubmitted() {
+    state.leaderboardSubmitted = true;
+    save();
+  }
+
   return {
     normalize,
     checkAnswer,
@@ -228,10 +266,15 @@ const Engine = (() => {
     currentStage,
     completeStage,
     completeGoogle,
+    useHint,
     advanceStage,
     distanceMeters,
     projectToMap,
     elapsedText,
+    elapsedSeconds,
+    teamName,
+    setTeamName,
+    markLeaderboardSubmitted,
     getPhotos,
     savePhoto,
     formatSeconds,

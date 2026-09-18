@@ -10,6 +10,8 @@
      GET  /api/code-for-session  → la página de "gracias" recupera el código
      POST /api/redeem            → valida código + dispositivo, entrega el
                                     juego en el idioma pedido (es/en/fr)
+     POST /api/leaderboard/submit → guarda el tiempo de un equipo en el ranking
+     GET  /api/leaderboard/top    → top N del ranking (por tiempo, ascendente)
 
    VARIABLES DE ENTORNO NECESARIAS (Settings → Variables del Worker):
      STRIPE_SECRET_KEY     (Encrypt) — clave secreta de Stripe (sk_live_...)
@@ -591,6 +593,85 @@ async function handleRedeem(request, env) {
   return json({ error: REDEEM_ERRORS.otherDevice[safeLang] }, 403, env);
 }
 
+/* POST /api/leaderboard/submit — guarda el tiempo de un equipo en el
+   ranking. Solo acepta el envío si el código+dispositivo corresponde
+   a una licencia activa (mismo chequeo que /api/redeem) — así nadie
+   puede inventarse un tiempo sin haber redimido antes una licencia
+   real en ese móvil. Si el equipo ya tenía una entrada, solo la
+   sobrescribe si el nuevo tiempo es mejor (menor). Devuelve el
+   puesto (rank) obtenido y el total de equipos en el ranking. */
+const LEADERBOARD_ERRORS = {
+  missing: { es: "Faltan datos.", en: "Missing data.", fr: "Données manquantes." },
+  invalid: {
+    es: "Licencia no válida para este dispositivo.",
+    en: "Licence not valid for this device.",
+    fr: "Licence non valide pour cet appareil.",
+  },
+};
+
+async function handleLeaderboardSubmit(request, env) {
+  const { code, deviceId, teamName, seconds, score, lang } = await request.json();
+  const safeLang = LANGS.includes(lang) ? lang : "es";
+  if (!code || !deviceId || !teamName || !Number.isFinite(seconds) || !Number.isFinite(score))
+    return json({ error: LEADERBOARD_ERRORS.missing[safeLang] }, 400, env);
+
+  const normalized = code.trim().toUpperCase();
+  const license = await env.DB.prepare(
+    "SELECT * FROM licenses WHERE code = ? AND device_id = ? AND status = 'active'"
+  )
+    .bind(normalized, deviceId)
+    .first();
+  if (!license) return json({ error: LEADERBOARD_ERRORS.invalid[safeLang] }, 403, env);
+
+  const cleanName = String(teamName).trim().slice(0, 40) || "Equipo anónimo";
+  const cleanSeconds = Math.max(1, Math.round(seconds));
+  const cleanScore = Math.round(score);
+
+  const existing = await env.DB.prepare("SELECT seconds FROM leaderboard WHERE code = ?")
+    .bind(normalized)
+    .first();
+
+  if (!existing || cleanSeconds < existing.seconds) {
+    await env.DB.prepare(
+      `INSERT INTO leaderboard (code, team_name, seconds, score, lang, completed_at)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT(code) DO UPDATE SET
+         team_name=excluded.team_name, seconds=excluded.seconds,
+         score=excluded.score, lang=excluded.lang, completed_at=excluded.completed_at`
+    )
+      .bind(normalized, cleanName, cleanSeconds, cleanScore, safeLang, Date.now())
+      .run();
+  }
+
+  const better = await env.DB.prepare(
+    "SELECT COUNT(*) AS n FROM leaderboard WHERE seconds < (SELECT seconds FROM leaderboard WHERE code = ?)"
+  )
+    .bind(normalized)
+    .first();
+  const total = await env.DB.prepare("SELECT COUNT(*) AS n FROM leaderboard").first();
+
+  return json({ rank: (better?.n || 0) + 1, total: total?.n || 1 }, 200, env);
+}
+
+/* GET /api/leaderboard/top?limit=10 — los mejores tiempos, sin datos
+   sensibles (nada de código, dispositivo ni email). */
+async function handleLeaderboardTop(request, env) {
+  const url = new URL(request.url);
+  const limit = Math.min(50, Math.max(1, parseInt(url.searchParams.get("limit") || "10", 10) || 10));
+  const { results } = await env.DB.prepare(
+    "SELECT team_name, seconds, score, completed_at FROM leaderboard ORDER BY seconds ASC LIMIT ?"
+  )
+    .bind(limit)
+    .all();
+  const rows = (results || []).map((r) => ({
+    teamName: r.team_name,
+    seconds: r.seconds,
+    score: r.score,
+    completedAt: r.completed_at,
+  }));
+  return json({ rows }, 200, env);
+}
+
 /* ============================================================
    Entrada
    ============================================================ */
@@ -617,6 +698,12 @@ export default {
 
       if (url.pathname === "/api/redeem" && request.method === "POST")
         return await handleRedeem(request, scopedEnv);
+
+      if (url.pathname === "/api/leaderboard/submit" && request.method === "POST")
+        return await handleLeaderboardSubmit(request, scopedEnv);
+
+      if (url.pathname === "/api/leaderboard/top" && request.method === "GET")
+        return await handleLeaderboardTop(request, scopedEnv);
 
       return json({ error: "not found" }, 404, scopedEnv);
     } catch (err) {

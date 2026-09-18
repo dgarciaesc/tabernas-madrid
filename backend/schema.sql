@@ -1,5 +1,5 @@
 -- ============================================================
--- El Testamento del Siglo de Oro — esquema de licencias (D1)
+-- Tabernas con Historia — esquema de licencias (D1)
 -- ============================================================
 -- Pega esto en el panel de Cloudflare: Workers & Pages → D1 →
 -- tu base de datos → pestaña "Console".
@@ -21,3 +21,16 @@ CREATE TABLE IF NOT EXISTS licenses (
 );
 
 CREATE INDEX IF NOT EXISTS idx_licenses_session ON licenses(stripe_session_id);
+
+-- Ranking de equipos: una fila por código de licencia (= un equipo),
+-- se sobrescribe solo si el nuevo tiempo es mejor que el guardado.
+CREATE TABLE IF NOT EXISTS leaderboard (
+  code TEXT PRIMARY KEY,          -- mismo código que en licenses
+  team_name TEXT NOT NULL,
+  seconds INTEGER NOT NULL,       -- tiempo total en segundos (menor = mejor)
+  score INTEGER NOT NULL,
+  lang TEXT,
+  completed_at INTEGER NOT NULL   -- epoch ms
+);
+
+CREATE INDEX IF NOT EXISTS idx_leaderboard_seconds ON leaderboard(seconds);

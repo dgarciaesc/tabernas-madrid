@@ -902,6 +902,57 @@ input.shake {
   margin: 6px 0;
 }
 
+/* ---------- Pista de pago ---------- */
+.btn-hint {
+  display: block;
+  width: 100%;
+  text-align: center;
+  margin: 10px 0 4px;
+}
+
+/* ---------- Ranking de equipos ---------- */
+.leaderboard-screen { text-align: center; }
+
+.btn-back {
+  align-self: flex-start;
+  margin-bottom: 4px;
+}
+
+.field-label {
+  display: block;
+  text-align: left;
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin: 0 0 6px 4px;
+}
+
+.leaderboard-rank {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--crimson);
+  margin: 6px 0 0;
+}
+
+.leaderboard-table th {
+  padding: 8px 6px;
+  border-bottom: 2px solid rgba(184, 134, 11, 0.5);
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+}
+
+.leaderboard-table th:last-child,
+.leaderboard-table th:nth-last-child(2) {
+  text-align: right;
+}
+
+.leaderboard-table td:nth-child(3) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---------- Toast ---------- */
 .toast {
   position: fixed;

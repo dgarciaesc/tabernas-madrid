@@ -112,6 +112,49 @@ const License = (() => {
     location.href = data.url;
   }
 
+  /* Envía el resultado de la partida al ranking (POST /api/leaderboard/
+     submit). El backend valida que el código+dispositivo pertenece a
+     una licencia activa antes de guardar nada — no se puede falsear
+     un tiempo sin tener una licencia real redimida en este móvil. */
+  async function submitLeaderboard({ teamName, seconds, score, lang }) {
+    const code = currentCode();
+    if (!code) throw new Error(I18N.t("leaderboard_error_nolicense"));
+
+    let res;
+    try {
+      res = await fetch(`${WORKER_URL}/api/leaderboard/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code,
+          deviceId: deviceId(),
+          teamName,
+          seconds,
+          score,
+          lang: lang || I18N.getLang() || "es",
+        }),
+      });
+    } catch (e) {
+      throw new Error(I18N.t("leaderboard_error_conn"));
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || I18N.t("leaderboard_error_conn"));
+    return data; // { rank, total }
+  }
+
+  /* Trae el top N del ranking (GET /api/leaderboard/top). */
+  async function fetchLeaderboardTop(limit = 10) {
+    let res;
+    try {
+      res = await fetch(`${WORKER_URL}/api/leaderboard/top?limit=${limit}`);
+    } catch (e) {
+      throw new Error(I18N.t("leaderboard_error_conn"));
+    }
+    if (!res.ok) throw new Error(I18N.t("leaderboard_error_conn"));
+    const data = await res.json().catch(() => ({}));
+    return Array.isArray(data.rows) ? data.rows : [];
+  }
+
   return {
     WORKER_URL,
     deviceId,
@@ -122,5 +165,7 @@ const License = (() => {
     redeem,
     refreshLanguage,
     startCheckout,
+    submitLeaderboard,
+    fetchLeaderboardTop,
   };
 })();

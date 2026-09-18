@@ -238,4 +238,5 @@ const SCORING = {
   revealPenalty: 250,   // adicional si se revela la respuesta
   googleBase: 500,      // sin uso en este juego (mecanismo retirado)
   speedBonus: 150,      // resolver a la primera en menos de 2 min
+  hintCost: 150,        // pedir la pista sutil voluntariamente, antes de fallar
 };
