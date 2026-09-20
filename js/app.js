@@ -976,8 +976,12 @@
         </div>
 
         <button class="btn-secondary" id="btnBuy">
-          ${t("license_buy", { price: GAME_DATA.price || "9€" })}
+          ${t("license_buy", { price: GAME_DATA.price || "9,99€" })}
         </button>
+        <button class="btn-secondary" id="btnBuyBundle">
+          ${t("license_buy_bundle", { price: GAME_DATA.bundlePrice || "14,99€" })}
+        </button>
+        <p class="title-meta">${t("license_bundle_note")}</p>
         <p class="title-meta">${t("license_note")}</p>
       </div>
     `);
@@ -987,6 +991,7 @@
     const $error = v.querySelector("#licenseError");
     const $btnRedeem = v.querySelector("#btnRedeem");
     const $btnBuy = v.querySelector("#btnBuy");
+    const $btnBuyBundle = v.querySelector("#btnBuyBundle");
 
     v.querySelector("#licenseForm").onsubmit = async (e) => {
       e.preventDefault();
@@ -1014,7 +1019,19 @@
       } catch (err) {
         toast(err.message);
         $btnBuy.disabled = false;
-        $btnBuy.textContent = t("license_buy", { price: GAME_DATA.price || "9€" });
+        $btnBuy.textContent = t("license_buy", { price: GAME_DATA.price || "9,99€" });
+      }
+    };
+
+    $btnBuyBundle.onclick = async () => {
+      $btnBuyBundle.disabled = true;
+      $btnBuyBundle.textContent = t("license_opening_payment");
+      try {
+        await License.startBundleCheckout();
+      } catch (err) {
+        toast(err.message);
+        $btnBuyBundle.disabled = false;
+        $btnBuyBundle.textContent = t("license_buy_bundle", { price: GAME_DATA.bundlePrice || "14,99€" });
       }
     };
 

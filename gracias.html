@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex" />
   <title>Gracias · Tabernas con Historia</title>
-  <link rel="stylesheet" href="css/styles.css?v=1" />
+  <link rel="stylesheet" href="css/styles.css?v=2" />
 </head>
 <body>
   <div id="app">
@@ -17,36 +17,37 @@
         <div class="card" id="resultCard">
           <div class="card-label">🔑 Vuestra licencia</div>
           <p id="msg">Confirmando el pago con Stripe…</p>
-          <p class="big-score" id="codeBox" style="display:none"></p>
+          <div id="codesArea"></div>
         </div>
-        <a class="btn-primary" id="btnPlay" href="./index.html" style="display:none; text-decoration:none; text-align:center">
-          Ir al juego
-        </a>
         <p class="title-meta">
-          Guardad este código: lo pedirá la app la primera vez que la
-          abráis. Se activa en el primer móvil donde se introduzca.
+          Guardad el código (o los códigos): los pedirá cada app la primera
+          vez que la abráis. Se activan en el primer móvil donde se
+          introduzcan.
         </p>
       </div>
     </main>
   </div>
 
-  <script src="js/license.js?v=1"></script>
+  <script src="js/license.js?v=2"></script>
   <script>
     (async () => {
       const $emblem = document.getElementById("emblem");
       const $msg = document.getElementById("msg");
-      const $codeBox = document.getElementById("codeBox");
-      const $btnPlay = document.getElementById("btnPlay");
+      const $codesArea = document.getElementById("codesArea");
 
       const params = new URLSearchParams(location.search);
       const sessionId = params.get("session_id");
+      const isBundle = params.get("bundle") === "1";
       if (!sessionId) {
         $emblem.textContent = "⚠";
         $msg.textContent = "Falta la referencia del pago. Si acabas de pagar, revisa el enlace que te llevó aquí.";
         return;
       }
 
-      // el webhook de Stripe puede tardar unos segundos: reintentamos
+      // el webhook de Stripe puede tardar unos segundos: reintentamos.
+      // Si es el pack de las 2 aventuras, esperamos a que aparezcan
+      // ambos códigos (uno por cada base de datos) antes de darnos
+      // por satisfechos.
       async function poll(tries) {
         for (let i = 0; i < tries; i++) {
           try {
@@ -54,20 +55,33 @@
               `${License.WORKER_URL}/api/code-for-session?session_id=${encodeURIComponent(sessionId)}`
             );
             const data = await res.json();
-            if (res.ok && data.code) return data.code;
+            if (res.ok && Array.isArray(data.codes) && data.codes.length) {
+              if (!isBundle || data.codes.length >= 2) return data.codes;
+            }
           } catch (e) {}
           await new Promise((r) => setTimeout(r, 2000));
         }
         return null;
       }
 
-      const code = await poll(10);
-      if (code) {
+      const codes = await poll(10);
+      if (codes) {
         $emblem.textContent = "⚜";
-        $msg.textContent = "¡Pago confirmado! Este es vuestro código de licencia:";
-        $codeBox.textContent = code;
-        $codeBox.style.display = "block";
-        $btnPlay.style.display = "block";
+        $msg.textContent = codes.length > 1
+          ? "¡Pago confirmado! Estos son vuestros códigos de licencia:"
+          : "¡Pago confirmado! Este es vuestro código de licencia:";
+        $codesArea.innerHTML = codes
+          .map(
+            (c) => `
+              <div style="margin-top:14px">
+                <p class="title-meta" style="margin-bottom:4px">${c.label}</p>
+                <p class="big-score">${c.code}</p>
+                <a class="btn-primary" href="${c.playUrl}" style="text-decoration:none; text-align:center; display:block">
+                  Ir al juego
+                </a>
+              </div>`
+          )
+          .join("");
       } else {
         $emblem.textContent = "⏳";
         $msg.textContent =

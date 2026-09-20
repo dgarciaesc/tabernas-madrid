@@ -117,6 +117,8 @@ const I18N = (() => {
       license_checking: "Comprobando…",
       license_activated: "⚜ Licencia activada. ¡Que comience la aventura!",
       license_buy: "💳 Comprar licencia — {price}",
+      license_buy_bundle: "🎁 Comprar las 2 aventuras — {price}",
+      license_bundle_note: "Incluye también «El Testamento del Siglo de Oro». Al pagar recibiréis dos códigos, uno para cada aventura.",
       license_opening_payment: "Abriendo pago…",
       license_note: "El código se activa en este móvil la primera vez que se usa. Solo hace falta conexión para este paso — el resto de la aventura funciona sin cobertura.",
 
@@ -262,6 +264,8 @@ const I18N = (() => {
       license_checking: "Checking…",
       license_activated: "⚜ Licence activated. Let the adventure begin!",
       license_buy: "💳 Buy licence — {price}",
+      license_buy_bundle: "🎁 Buy both adventures — {price}",
+      license_bundle_note: "Also includes \"El Testamento del Siglo de Oro.\" You'll receive two codes at checkout, one for each adventure.",
       license_opening_payment: "Opening payment…",
       license_note: "The code activates on this phone the first time it's used. You only need a connection for this step — the rest of the adventure works without coverage.",
 
@@ -407,6 +411,8 @@ const I18N = (() => {
       license_checking: "Vérification…",
       license_activated: "⚜ Licence activée. Que l'aventure commence !",
       license_buy: "💳 Acheter la licence — {price}",
+      license_buy_bundle: "🎁 Acheter les 2 aventures — {price}",
+      license_bundle_note: "Comprend aussi « El Testamento del Siglo de Oro ». Vous recevrez deux codes après le paiement, un pour chaque aventure.",
       license_opening_payment: "Ouverture du paiement…",
       license_note: "Le code s'active sur ce téléphone dès la première utilisation. Une connexion n'est nécessaire que pour cette étape — le reste de l'aventure fonctionne sans réseau.",
 

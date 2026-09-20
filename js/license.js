@@ -112,6 +112,23 @@ const License = (() => {
     location.href = data.url;
   }
 
+  /* Igual que startCheckout(), pero para el pack de las 2 aventuras
+     (POST /api/bundle-checkout): una sola compra que, al confirmarse,
+     genera un código para este juego y otro para el juego hermano. */
+  async function startBundleCheckout() {
+    let res;
+    try {
+      res = await fetch(`${WORKER_URL}/api/bundle-checkout`, { method: "POST" });
+    } catch (e) {
+      throw new Error(I18N.t("license_error_checkout_conn"));
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.url) {
+      throw new Error(data.error || I18N.t("license_error_checkout_failed"));
+    }
+    location.href = data.url;
+  }
+
   /* Envía el resultado de la partida al ranking (POST /api/leaderboard/
      submit). El backend valida que el código+dispositivo pertenece a
      una licencia activa antes de guardar nada — no se puede falsear
@@ -185,6 +202,7 @@ const License = (() => {
     redeem,
     refreshLanguage,
     startCheckout,
+    startBundleCheckout,
     submitLeaderboard,
     fetchLeaderboardTop,
     trackEvent,

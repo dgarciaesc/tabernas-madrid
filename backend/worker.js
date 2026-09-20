@@ -6,8 +6,11 @@
 
    RUTAS:
      POST /api/checkout          → crea una sesión de pago (Stripe)
+     POST /api/bundle-checkout    → crea una sesión de pago del pack (esta
+                                    aventura + El Testamento del Siglo de Oro)
      POST /api/stripe-webhook    → Stripe notifica el pago; genera el código
-     GET  /api/code-for-session  → la página de "gracias" recupera el código
+                                    (o los dos, si es el pack)
+     GET  /api/code-for-session  → la página de "gracias" recupera el/los código/s
      POST /api/redeem            → valida código + dispositivo, entrega el
                                     juego en el idioma pedido (es/en/fr)
      POST /api/leaderboard/submit → guarda el tiempo de un equipo en el ranking
@@ -17,13 +20,22 @@
    VARIABLES DE ENTORNO NECESARIAS (Settings → Variables del Worker):
      STRIPE_SECRET_KEY     (Encrypt) — clave secreta de Stripe (sk_live_...)
      STRIPE_WEBHOOK_SECRET (Encrypt) — firma del webhook (whsec_...)
-     STRIPE_PRICE_ID                 — ID del precio creado en Stripe (price_...)
+     STRIPE_PRICE_ID                 — ID del precio de esta aventura sola (price_...)
+     STRIPE_BUNDLE_PRICE_ID          — ID del precio del pack de las 2 aventuras
+                                        (mismo valor que en el Worker de Siglo de Oro:
+                                        es un único precio de Stripe, compartido)
      SITE_URL                        — https://dgarciaesc.github.io/scape-room (con ruta)
      ALLOWED_ORIGIN                  — https://dgarciaesc.github.io (SIN ruta: el navegador
                                         nunca incluye la ruta en la cabecera Origin)
 
-   BINDING NECESARIO:
-     DB → la base de datos D1 creada con schema.sql
+   BINDINGS NECESARIOS:
+     DB       → la base de datos D1 de este juego, creada con schema.sql
+     OTHER_DB → la base de datos D1 de El Testamento del Siglo de Oro (el
+                otro juego). Solo se usa para el pack de las 2 aventuras:
+                al comprarlo, este Worker escribe también el código del
+                Siglo de Oro ahí. Sin este binding, el botón de "comprar
+                las 2" simplemente no debe mostrarse (o fallaría el pack,
+                aunque la compra normal seguiría funcionando igual).
    ============================================================ */
 
 /* ---------- i18n: mismo motor que js/i18n.js del frontend ----------
@@ -431,12 +443,12 @@ function json(data, status, env) {
 }
 
 /* Código legible sin caracteres ambiguos (0/O, 1/I/L) */
-function generateCode() {
+function generateCode(prefix = "TABERNAS") {
   const alphabet = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
   let code = "";
   const bytes = crypto.getRandomValues(new Uint8Array(6));
   for (const b of bytes) code += alphabet[b % alphabet.length];
-  return `TABERNAS-${code}`;
+  return `${prefix}-${code}`;
 }
 
 /* Verificación de la firma del webhook de Stripe (esquema HMAC-SHA256
@@ -500,8 +512,29 @@ async function handleCheckout(request, env) {
   return json({ url: session.url }, 200, env);
 }
 
+/* POST /api/bundle-checkout — igual que /api/checkout, pero para el
+   pack de las 2 aventuras. Se marca la sesión con metadata[type]=bundle
+   para que el webhook sepa que debe generar dos códigos en lugar de
+   uno, y se avisa a gracias.html vía ?bundle=1 de que debe esperar dos
+   códigos, no uno. */
+async function handleBundleCheckout(request, env) {
+  const session = await stripeFetch(env, "checkout/sessions", {
+    mode: "payment",
+    "line_items[0][price]": env.STRIPE_BUNDLE_PRICE_ID,
+    "line_items[0][quantity]": "1",
+    "metadata[type]": "bundle",
+    success_url: `${env.SITE_URL}/gracias.html?session_id={CHECKOUT_SESSION_ID}&bundle=1`,
+    cancel_url: `${env.SITE_URL}/`,
+  });
+  return json({ url: session.url }, 200, env);
+}
+
 /* POST /api/stripe-webhook — Stripe notifica el pago confirmado.
-   Genera el código de licencia y lo guarda en D1. */
+   Genera el código de licencia y lo guarda en D1. Si la sesión es del
+   pack de las 2 aventuras (metadata.type === "bundle"), genera además
+   un segundo código para el juego hermano y lo guarda en su propia
+   base D1 — accesible desde este Worker vía el binding OTHER_DB (ver
+   variables de entorno en la cabecera del fichero). */
 async function handleWebhook(request, env) {
   const rawBody = await request.text();
   const sig = request.headers.get("Stripe-Signature");
@@ -511,35 +544,82 @@ async function handleWebhook(request, env) {
   const event = JSON.parse(rawBody);
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
-    const code = generateCode();
+    const email = session.customer_details?.email || null;
+    const now = Date.now();
+
+    const code = generateCode("TABERNAS");
     await env.DB.prepare(
       `INSERT INTO licenses (code, stripe_session_id, email, status, created_at)
        VALUES (?, ?, ?, 'unused', ?)`
     )
-      .bind(code, session.id, session.customer_details?.email || null, Date.now())
+      .bind(code, session.id, email, now)
       .run();
+
+    if (session.metadata?.type === "bundle" && env.OTHER_DB) {
+      const otherCode = generateCode("MADRID");
+      await env.OTHER_DB.prepare(
+        `INSERT INTO licenses (code, stripe_session_id, email, status, created_at)
+         VALUES (?, ?, ?, 'unused', ?)`
+      )
+        .bind(otherCode, session.id, email, now)
+        .run();
+    }
   }
   return new Response("ok", { status: 200 });
 }
 
 /* GET /api/code-for-session?session_id=... — la página de "gracias"
-   recupera el código recién generado para mostrarlo al comprador. */
+   recupera el código (o los dos, si era el pack) para mostrarlo al
+   comprador. Busca primero en la base propia y, si existe el binding
+   OTHER_DB, también en la del juego hermano — así una compra del pack
+   devuelve ambos códigos aunque cada uno viva en su propia base. */
 async function handleCodeForSession(request, env) {
   const url = new URL(request.url);
   const sessionId = url.searchParams.get("session_id");
   if (!sessionId) return json({ error: "falta session_id" }, 400, env);
 
-  const row = await env.DB.prepare(
+  const codes = [];
+
+  const ownRow = await env.DB.prepare(
     "SELECT code FROM licenses WHERE stripe_session_id = ?"
   )
     .bind(sessionId)
     .first();
+  if (ownRow) {
+    codes.push({
+      game: "tabernas",
+      label: "Tabernas con Historia",
+      code: ownRow.code,
+      playUrl: "./index.html",
+    });
+  }
 
-  if (!row) {
+  if (env.OTHER_DB) {
+    try {
+      const otherRow = await env.OTHER_DB.prepare(
+        "SELECT code FROM licenses WHERE stripe_session_id = ?"
+      )
+        .bind(sessionId)
+        .first();
+      if (otherRow) {
+        codes.push({
+          game: "siglodeoro",
+          label: "El Testamento del Siglo de Oro",
+          code: otherRow.code,
+          playUrl: "https://hiddenmadrid.com/goldenage/",
+        });
+      }
+    } catch (e) {
+      // si el binding no está listo o la otra base falla, no bloqueamos
+      // la entrega del código propio — se puede reintentar más tarde
+    }
+  }
+
+  if (!codes.length) {
     // el webhook de Stripe puede tardar unos segundos en llegar
     return json({ pending: true }, 202, env);
   }
-  return json({ code: row.code }, 200, env);
+  return json({ codes }, 200, env);
 }
 
 /* POST /api/redeem — valida código + dispositivo y, si es correcto,
@@ -720,6 +800,9 @@ export default {
     try {
       if (url.pathname === "/api/checkout" && request.method === "POST")
         return await handleCheckout(request, scopedEnv);
+
+      if (url.pathname === "/api/bundle-checkout" && request.method === "POST")
+        return await handleBundleCheckout(request, scopedEnv);
 
       if (url.pathname === "/api/stripe-webhook" && request.method === "POST")
         return await handleWebhook(request, scopedEnv);
