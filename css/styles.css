@@ -663,7 +663,8 @@ input.shake {
 }
 
 .home-emblem {
-  font-size: 46px;
+  width: 84px;
+  height: auto;
   margin-bottom: 6px;
   filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.6));
 }
@@ -765,7 +766,12 @@ input.shake {
   padding: 24px 8px;
 }
 
-.title-emblem { font-size: 74px; margin-bottom: 6px; }
+.title-emblem {
+  width: 130px;
+  height: auto;
+  margin-bottom: 6px;
+  filter: drop-shadow(0 2px 12px rgba(0, 0, 0, 0.45));
+}
 
 .title-screen h1 {
   font-size: 36px;

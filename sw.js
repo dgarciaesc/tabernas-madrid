@@ -1,9 +1,12 @@
 /* Service worker: juego 100% offline una vez cargado.
    Importante en la calle, donde la cobertura falla. */
-const CACHE = "tabernas-v6";
+const CACHE = "tabernas-v7";
 const ASSETS = [
   "./img/home_madrid.jpg",
   "./img/app_bg.jpg",
+  "./img/emblem.png",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png",
   "./img/narrador_retrato.jpg",
   "./img/etapa1_antoniosanchez.jpg",
   "./img/etapa2_botin.jpg",

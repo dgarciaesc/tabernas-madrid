@@ -841,7 +841,7 @@
           <img src="img/home_madrid.jpg" alt="Madrid" />
           <div class="home-scrim"></div>
           <div class="home-content">
-            <div class="home-emblem">🍷</div>
+            <img class="home-emblem" src="img/emblem.png" alt="Tabernas con Historia" />
             <h1 class="home-title">${t("home_title")}</h1>
             <p class="home-tagline" id="homeTagline"></p>
             <div class="home-langs">
@@ -902,7 +902,7 @@
     const v = el(`
       <div class="title-screen">
         ${langSwitcher()}
-        <div class="title-emblem">🍷</div>
+        <img class="title-emblem" src="img/emblem.png" alt="${GAME_DATA.title}" />
         <h1>${GAME_DATA.title}</h1>
         <p class="title-sub">${GAME_DATA.subtitle}</p>
         <div class="ornament">❦ ❦ ❦</div>
