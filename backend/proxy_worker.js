@@ -1,57 +1,50 @@
 /* ============================================================
-   PUENTE /tabernas — Cloudflare Worker
+   PUENTE tabernas.hiddenmadrid.com — Cloudflare Worker
    ============================================================
-   Sirve el juego (alojado en GitHub Pages) bajo la ruta
-   hiddenmadrid.com/tabernas, mientras el resto del dominio
-   (la raíz, y también /goldenage) sigue sirviendo lo que ya
-   sirven sin verse afectados.
+   Sirve el juego (alojado en GitHub Pages) bajo el SUBDOMINIO
+   tabernas.hiddenmadrid.com, independiente de la raíz del dominio
+   (que sigue sirviendo la web de Lovable sin verse afectada).
+
+   Por qué un subdominio y no una subruta (hiddenmadrid.com/tabernas):
+   Lovable exige que el registro DNS de la raíz de hiddenmadrid.com
+   esté en modo "DNS only" (nube gris) para su propia verificación de
+   dominio — y una Route de Worker solo intercepta tráfico en registros
+   "Proxied" (nube naranja). Un subdominio tiene su PROPIO registro DNS,
+   así que puede ir proxied sin tocar para nada la raíz ni la
+   integración con Lovable.
 
    Este Worker NO toca el backend de licencias de Tabernas — es un
    Worker aparte, solo para servir los ficheros estáticos del juego
-   bajo esa ruta. El frontend sigue llamando directamente a la URL
-   del Worker de licencias (js/license.js → WORKER_URL), como
-   siempre.
+   bajo ese subdominio. El frontend sigue llamando directamente a la URL
+   del Worker de licencias (js/license.js → WORKER_URL), como siempre.
 
    DESPLIEGUE:
-     1. Cloudflare → Workers & Pages → Create → Create Worker.
-     2. Nombre sugerido: "tabernas-proxy" → Deploy (con el código de
+     1. Cloudflare → DNS → Add record → Type: CNAME, Name: tabernas,
+        Target: (cualquier valor válido, p.ej. el propio dominio
+        tabernas.hiddenmadrid.com o "tabernas-proxy.workers.dev" si
+        ya existe el Worker) → Proxy status: Proxied (nube naranja).
+        [Si Cloudflare no deja guardar un CNAME así, usa un registro A
+        con la IP ficticia 192.0.2.1 — solo hace falta que exista el
+        registro y esté "Proxied" para que la Route lo intercepte;
+        el Worker nunca llega a usar ese valor.]
+     2. Cloudflare → Workers & Pages → Create → Create Worker.
+     3. Nombre sugerido: "tabernas-proxy" → Deploy (con el código de
         ejemplo; luego lo sustituyes).
-     3. Edit code → borra todo, pega este archivo entero → Save and deploy.
-     4. En el propio Worker → Settings → Domains & Routes → Add →
-        "Route": introduce   hiddenmadrid.com/tabernas*
+     4. Edit code → borra todo, pega este archivo entero → Save and deploy.
+     5. En el propio Worker → Settings → Domains & Routes → Add →
+        "Route": introduce   tabernas.hiddenmadrid.com/*
         (con el asterisco al final, sin espacios) y selecciona la zona
         hiddenmadrid.com. Guarda.
-
-   IMPORTANTE — requisito de DNS:
-     Esta ruta SOLO intercepta el tráfico si el registro DNS de
-     hiddenmadrid.com en Cloudflare está "Proxied" (nube naranja).
-     Como la raíz ya cuelga de un dominio personalizado de Cloudflare
-     Pages (ver proxy_worker.js del otro juego), esto ya se cumple:
-     no hace falta tocar nada de DNS para este paso.
    ============================================================ */
 
 const UPSTREAM_ORIGIN = "https://dgarciaesc.github.io";
 const UPSTREAM_BASE_PATH = "/tabernas-madrid"; // ruta real del juego en GitHub Pages
-const PUBLIC_PREFIX = "/tabernas"; // ruta pública bajo hiddenmadrid.com
 
 export default {
   async fetch(request) {
     const url = new URL(request.url);
 
-    // Redirección con barra final: /tabernas -> /tabernas/
-    // (necesario para que las rutas relativas del juego, tipo
-    // "js/app.js", resuelvan bien contra /tabernas/js/app.js).
-    if (url.pathname === PUBLIC_PREFIX) {
-      const redirectUrl = new URL(url);
-      redirectUrl.pathname = PUBLIC_PREFIX + "/";
-      return Response.redirect(redirectUrl.toString(), 301);
-    }
-
-    const rest = url.pathname.startsWith(PUBLIC_PREFIX)
-      ? url.pathname.slice(PUBLIC_PREFIX.length)
-      : url.pathname;
-
-    const upstreamUrl = UPSTREAM_ORIGIN + UPSTREAM_BASE_PATH + rest + url.search;
+    const upstreamUrl = UPSTREAM_ORIGIN + UPSTREAM_BASE_PATH + url.pathname + url.search;
 
     const upstreamRequest = new Request(upstreamUrl, {
       method: request.method,

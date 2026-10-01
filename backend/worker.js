@@ -24,9 +24,13 @@
      STRIPE_BUNDLE_PRICE_ID          — ID del precio del pack de las 2 aventuras
                                         (mismo valor que en el Worker de Siglo de Oro:
                                         es un único precio de Stripe, compartido)
-     SITE_URL                        — https://dgarciaesc.github.io/scape-room (con ruta)
-     ALLOWED_ORIGIN                  — https://dgarciaesc.github.io (SIN ruta: el navegador
-                                        nunca incluye la ruta en la cabecera Origin)
+     SITE_URL                        — https://tabernas.hiddenmadrid.com (el juego vive en
+                                        este subdominio propio; ver backend/proxy_worker.js)
+     ALLOWED_ORIGIN                  — https://tabernas.hiddenmadrid.com (debe coincidir
+                                        EXACTAMENTE con el origen desde el que se sirve el
+                                        juego — si el juego se sirve desde un subdominio
+                                        distinto, el navegador bloqueará por CORS todas las
+                                        llamadas a este Worker)
 
    BINDINGS NECESARIOS:
      DB       → la base de datos D1 de este juego, creada con schema.sql
@@ -606,7 +610,7 @@ async function handleCodeForSession(request, env) {
           game: "siglodeoro",
           label: "El Testamento del Siglo de Oro",
           code: otherRow.code,
-          playUrl: "https://hiddenmadrid.com/goldenage/",
+          playUrl: "https://goldenage.hiddenmadrid.com/",
         });
       }
     } catch (e) {

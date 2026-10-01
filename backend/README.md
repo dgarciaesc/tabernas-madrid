@@ -25,7 +25,7 @@ Save and deploy".
 
 Repositorio: [github.com/dgarciaesc/tabernas-madrid](https://github.com/dgarciaesc/tabernas-madrid),
 con GitHub Pages activado. URL real del juego (no la uses directamente
-con jugadores; el dominio público es `hiddenmadrid.com/tabernas`, ver
+con jugadores; el dominio público es `tabernas.hiddenmadrid.com`, ver
 paso 5 más abajo):
 
 ```
@@ -63,8 +63,8 @@ https://dgarciaesc.github.io/tabernas-madrid/
    | `STRIPE_SECRET_KEY` | tu clave secreta de Stripe (paso 3) | ✅ |
    | `STRIPE_WEBHOOK_SECRET` | la firma del webhook (paso 3) | ✅ |
    | `STRIPE_PRICE_ID` | el ID del precio creado en Stripe (paso 3) | ✅ |
-   | `SITE_URL` | `https://hiddenmadrid.com/tabernas` (con la ruta, sin barra final — el juego vive bajo /tabernas, ver el Worker-puente del paso 5; se usa para construir las URLs de vuelta de Stripe) | — |
-   | `ALLOWED_ORIGIN` | `https://hiddenmadrid.com` (⚠️ **sin ninguna ruta** — el navegador nunca incluye la ruta en la cabecera `Origin`, así que esto no cambia aunque el juego esté en /tabernas; si pones una ruta aquí, CORS bloquea todas las peticiones) | — |
+   | `SITE_URL` | `https://tabernas.hiddenmadrid.com` (sin barra final — el juego vive en este subdominio propio, ver el Worker-puente del paso 5; se usa para construir las URLs de vuelta de Stripe) | — |
+   | `ALLOWED_ORIGIN` | `https://tabernas.hiddenmadrid.com` (⚠️ **debe coincidir exactamente** con el origen desde el que se sirve el juego; si no coincide, CORS bloquea todas las peticiones) | — |
 
    Guarda y **vuelve a desplegar** el Worker tras añadirlas (Deploy).
 
@@ -98,27 +98,36 @@ git commit -m "Conectar backend de licencias"
 git push
 ```
 
-## 5. Publicar en hiddenmadrid.com/tabernas (Worker-puente)
+## 5. Publicar en tabernas.hiddenmadrid.com (Worker-puente)
 
 El juego vive en GitHub Pages, pero los jugadores deben usar
-`hiddenmadrid.com/tabernas` (no la URL de github.io). Para eso hace
-falta un segundo Worker, aparte del de licencias, que actúe de puente:
+`tabernas.hiddenmadrid.com` (no la URL de github.io). La raíz de
+hiddenmadrid.com la sirve Lovable y exige su registro DNS en modo
+"DNS only" (nube gris), por lo que una Worker Route sobre una subruta
+de la raíz (`hiddenmadrid.com/tabernas*`) no funciona — el juego vive
+en un **subdominio propio**, con su propio registro DNS, que sí puede
+ir "Proxied" sin tocar nada de la raíz:
 
-1. **Workers & Pages** → **Create** → **Workers** → **Create Worker**
-2. Nombre: `tabernas-proxy` → Deploy (con el código de ejemplo, luego lo sustituyes)
-3. **Edit code** → borra todo, pega el de [proxy_worker.js](proxy_worker.js) de este repo → **Save and deploy**
-4. En el propio Worker → **Settings → Domains & Routes → Add → Route**:
-   - Route: `hiddenmadrid.com/tabernas*` (con el asterisco al final)
+1. **DNS** → Add record → Type: `CNAME`, Name: `tabernas`, Target:
+   cualquier valor válido (p.ej. `tabernas-proxy.<tu-cuenta>.workers.dev`
+   si ya existe el Worker, o el propio `tabernas.hiddenmadrid.com`) →
+   Proxy status: **Proxied** (nube naranja).
+2. **Workers & Pages** → **Create** → **Workers** → **Create Worker**
+3. Nombre: `tabernas-proxy` → Deploy (con el código de ejemplo, luego lo sustituyes)
+4. **Edit code** → borra todo, pega el de [proxy_worker.js](proxy_worker.js) de este repo → **Save and deploy**
+5. En el propio Worker → **Settings → Domains & Routes → Add → Route**:
+   - Route: `tabernas.hiddenmadrid.com/*` (con el asterisco al final)
    - Zona: `hiddenmadrid.com`
    - Guarda
 
-Esto es exactamente el mismo mecanismo que ya usa `hiddenmadrid.com/goldenage`
-para el primer juego — cada juego tiene su propio Worker-puente, así
-que no hay ningún conflicto entre ambos.
+Esto es exactamente el mismo mecanismo que usa `goldenage.hiddenmadrid.com`
+para el primer juego — cada juego tiene su propio Worker-puente y su
+propio subdominio, así que no hay ningún conflicto entre ambos ni con
+la raíz del dominio (que sigue intacta para Lovable).
 
 ## 6. Probar de punta a punta
 
-1. Abre `https://hiddenmadrid.com/tabernas/` en una pestaña nueva (o borra `localStorage`)
+1. Abre `https://tabernas.hiddenmadrid.com/` en una pestaña nueva (o borra `localStorage`)
 2. Pulsa "Comprar licencia" → paga con la tarjeta de prueba `4242 4242 4242 4242`
 3. Deberías caer en `gracias.html` con un código `TABERNAS-XXXXXX`
 4. Vuelve al juego, introdúcelo → debería desbloquear las 5 paradas
