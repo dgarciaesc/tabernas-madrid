@@ -7,6 +7,25 @@
   <title>Gracias · Tabernas con Historia</title>
   <link rel="icon" href="icons/icon-192.png" type="image/png" />
   <link rel="stylesheet" href="css/styles.css?v=3" />
+  <!-- Google Analytics 4 — medición de compras. Sustituye GA_ID por tu ID
+       de medición (G-XXXXXXXXXX). Mientras siga como "G-XXXXXXXXXX" no se
+       carga nada. Consent Mode: sin banner de cookies el consentimiento de
+       analítica queda DENEGADO por defecto (no se guardan cookies; Google
+       solo recibe pings anónimos). -->
+  <script>
+    window.GA_ID = "G-XXXXXXXXXX";
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){ dataLayer.push(arguments); }
+    if (/^G-[A-Z0-9]{6,}$/.test(window.GA_ID) && window.GA_ID !== "G-XXXXXXXXXX") {
+      gtag("consent", "default", { analytics_storage: "denied", ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied" });
+      gtag("js", new Date());
+      gtag("config", window.GA_ID, { linker: { domains: ["hiddenmadrid.com", "goldenage.hiddenmadrid.com", "tabernas.hiddenmadrid.com"] } });
+      var gs = document.createElement("script");
+      gs.async = true;
+      gs.src = "https://www.googletagmanager.com/gtag/js?id=" + window.GA_ID;
+      document.head.appendChild(gs);
+    }
+  </script>
 </head>
 <body>
   <div id="app">
@@ -67,6 +86,19 @@
 
       const codes = await poll(10);
       if (codes) {
+        // evento de compra para GA4 (una vez por pago; transaction_id evita duplicados al recargar)
+        try {
+          const trackedKey = "ga_purchase_" + sessionId;
+          if (typeof window.gtag === "function" && !localStorage.getItem(trackedKey)) {
+            localStorage.setItem(trackedKey, "1");
+            gtag("event", "purchase", {
+              transaction_id: sessionId,
+              value: isBundle ? 14.99 : 9.99,
+              currency: "EUR",
+              items: [{ item_id: isBundle ? "pack-2-aventuras" : "tabernas", item_name: isBundle ? "Pack 2 aventuras" : "Tabernas con Historia", price: isBundle ? 14.99 : 9.99, quantity: 1 }]
+            });
+          }
+        } catch (e) {}
         $emblem.textContent = "⚜";
         $msg.textContent = codes.length > 1
           ? "¡Pago confirmado! Estos son vuestros códigos de licencia:"
